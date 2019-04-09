@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+if [[ "${COINMARKETCAP_ENV}" == "PROD" ]]; then
+  CMC_ENDPOINT="${COINMARKETCAP_PRODUCTION}"
+  CMC_KEY="${COINMARKETCAP_API_PROD_KEY}"
+else
+  CMC_ENDPOINT="${COINMARKETCAP_SANDBOX}"
+  CMC_KEY="${COINMARKETCAP_API_SANDBOX_KEY}"
+fi
+  
+crywatch::dev_mode(){
+  if [[ "${COINMARKETCAP_ENV}" == "DEV" ]]; then
+    printf -- '-%.0s' $(seq 70)
+    echo""
+    echo "CRYWATCH [DEV-MODE]"
+    printf -- '-%.0s' $(seq 70)
+    echo ""
+    echo " - COINMARKETCAP_API_KEY = ${CMC_KEY}"
+    echo " - COINMARKETCAP_ENDPOINT = ${CMC_ENDPOINT}"
+    echo ""
+fi
+}
+
+crywatch::request(){
+  curl -s -H "X-CMC_PRO_API_KEY: ${CMC_KEY}"\
+  -H "Accept: application/json"\
+  -d "start=1&limit=5000&convert=USD"\
+  -G "https://${CMC_ENDPOINT}/v1/cryptocurrency/listings/latest"
+}
+
+crywatch::getPrice(){
+  local symbol="$1"
+  jq ".data[] | select(.name==\"${symbol}\") | .quote.USD.price" coin_response.json
+}
+
+case $1 in
+  -p|--price)
+    crywatch::request > coin_response.json
+    crywatch::getPrice $2
+  ;;
+  *)
+    exit 1
+  ;;
+esac
+
+
+
+
+
